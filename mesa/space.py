@@ -572,8 +572,9 @@ class ContinuousSpace:
             pos_1 = (pos_1 - self.center) % self.size
             pos_2 = (pos_2 - self.center) % self.size
         dist_2 = np.linalg.norm(pos_1 - pos_2)
+        d = pos_1 - pos_2
 
-        return min(dist_1, dist_2)
+        return np.sqrt(d[0] ** 2 + d[1] ** 2)
 
     def torus_adj(self, pos):
         """ Adjust coordinates to handle torus looping.
