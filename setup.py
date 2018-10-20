@@ -8,8 +8,6 @@ from codecs import open
 requires = [
     'click',
     'cookiecutter',
-    'jupyter',
-    'networkx',
     'numpy',
     'pandas',
     'tornado >= 4.2, < 5.0.0',
@@ -22,6 +20,8 @@ extras_require = {
         'flake8',
         'nose',
         'sphinx',
+        'jupyter',
+        'networkx',
     ],
     'docs': [
         'sphinx',
