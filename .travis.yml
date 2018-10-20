@@ -8,6 +8,9 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  directories:
+    - $HOME/.cache  # cython cache
+    - $HOME/.ccache  # compiler cache
   # - "nightly"
 install:
   - pip install coveralls
