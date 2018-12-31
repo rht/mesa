@@ -69,6 +69,7 @@ class Grid:
         is_cell_empty: Returns a bool of the contents of a cell.
 
     """
+    __slots__ = 'height', 'width', 'torus', 'grid', 'empties'
 
     def __init__(self, width, height, torus):
         """ Create a new grid.
@@ -778,6 +779,7 @@ class ContinuousSpace:
 
 class NetworkGrid:
     """ Network Grid where each node contains zero or more agents. """
+    __slots__ = 'G',
 
     def __init__(self, G):
         self.G = G
