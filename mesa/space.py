@@ -321,7 +321,7 @@ class Grid:
     def _remove_agent(self, pos, agent):
         """ Remove the agent from the given location. """
         x, y = pos
-        self.grid[x][y] = None
+        self.grid[x][y] = self.default_val()
         self.empties.add(pos)
 
     def is_cell_empty(self, pos):
