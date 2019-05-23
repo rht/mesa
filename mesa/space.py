@@ -298,15 +298,15 @@ class Grid:
         """
         pos = self.torus_adj(pos)
         self._remove_agent(agent.pos, agent)
-        self._place_agent(pos, agent)
+        self._place_agent(agent, pos)
         agent.pos = pos
 
     def place_agent(self, agent, pos):
         """ Position an agent on the grid, and set its pos variable. """
-        self._place_agent(pos, agent)
+        self._place_agent(agent, pos)
         agent.pos = pos
 
-    def _place_agent(self, pos, agent):
+    def _place_agent(self, agent, pos):
         """ Place the agent at the correct location. """
         x, y = pos
         self.grid[x][y] = agent
@@ -335,7 +335,7 @@ class Grid:
         if len(self.empties) == 0:
             raise Exception("ERROR: No empty cells")
         new_pos = agent.random.choice(sorted(self.empties))
-        self._place_agent(new_pos, agent)
+        self._place_agent(agent, new_pos)
         agent.pos = new_pos
         self._remove_agent(pos, agent)
 
@@ -392,11 +392,11 @@ class SingleGrid(Grid):
         else:
             coords = (x, y)
         agent.pos = coords
-        self._place_agent(coords, agent)
+        self._place_agent(agent, coords)
 
-    def _place_agent(self, pos, agent):
+    def _place_agent(self, agent, pos):
         if self.is_cell_empty(pos):
-            super()._place_agent(pos, agent)
+            super()._place_agent(agent, pos)
         else:
             raise Exception("Cell not empty")
 
@@ -426,7 +426,7 @@ class MultiGrid(Grid):
         """ Default value for new cell elements. """
         return set()
 
-    def _place_agent(self, pos, agent):
+    def _place_agent(self, agent, pos):
         """ Place the agent at the correct location. """
         x, y = pos
         self.grid[x][y].add(agent)
