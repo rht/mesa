@@ -186,55 +186,55 @@ class SsAgent(Agent):
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
 
-    def sell_spice(self, other, price):
+    def calculate_sell_spice_amount(self, price):
         # GAS page 105.
         # The quantities to be exchanged are as follows: if p > 1 then p units
         # of spice for 1 unit of sugar; if p < 1 then 1/p units of sugar for 1
         # unit of spice.
         if price >= 1:
-            self.sugar += 1
-            other.sugar -= 1
-            rounded = int(price)
-            self.spice -= rounded
-            other.spice += rounded
+            sugar = 1
+            spice = int(price)
         else:
-            rounded = int(1 / price)
-            self.sugar += rounded
-            other.sugar -= rounded
-            self.spice -= 1
-            other.spice += 1
+            sugar = int(1 / price)
+            spice = 1
+        return sugar, spice
 
-    def revert_sell_spice(self, other, price):
-        if price >= 1:
-            self.sugar -= 1
-            other.sugar += 1
-            rounded = int(price)
-            self.spice += rounded
-            other.spice -= rounded
-        else:
-            rounded = int(1 / price)
-            self.sugar -= rounded
-            other.sugar += rounded
-            self.spice += 1
-            other.spice -= 1
+    def sell_spice(self, other, sugar, spice):
+        self.sugar += sugar
+        other.sugar -= sugar
+        self.spice -= spice
+        other.spice += spice
 
     def maybe_sell_spice(self, other, price, welfare_self, welfare_other):
-        self.sell_spice(other, price)
+        sugar_exchanged, spice_exchanged = self.calculate_sell_spice_amount(price)
+        # Preparing the new sugar spice amount -- what if the exchange were to occur.
+        self_sugar = self.sugar + sugar_exchanged
+        other_sugar = other.sugar - sugar_exchanged
+        self_spice = self.spice - spice_exchanged
+        other_spice = other.spice + spice_exchanged
 
         # Our extra rule (not specified by Epstein) to prevent the
         # buyer/seller running out of sugar/spice.
-        if self.is_starved() or other.is_starved():
-            self.revert_sell_spice(other, price)
+        if (
+            (self_sugar <= 0)
+            or (other_sugar <= 0)
+            or (self_spice <= 0)
+            or (other_spice <= 0)
+        ):
             return False
 
-        both_agents_better_off = (welfare_self < self.calculate_welfare()) and (
-            welfare_other < other.calculate_welfare()
-        )
-        mrs_not_crossing = self.calculate_MRS() > other.calculate_MRS()
+        both_agents_better_off = (
+            welfare_self < self.calculate_welfare(self_sugar, self_spice)
+        ) and (welfare_other < other.calculate_welfare(other_sugar, other_spice))
+        mrs_not_crossing = self.calculate_MRS(
+            self_sugar, self_spice
+        ) > other.calculate_MRS(other_sugar, other_spice)
         if not (both_agents_better_off and mrs_not_crossing):
-            self.revert_sell_spice(other, price)
             # To prevent infinite loop of trading.
             return False
+
+        # Perform the actual sell operation
+        self.sell_spice(other, sugar_exchanged, spice_exchanged)
         return True
 
     def trade_with_neighbors(self):
@@ -330,8 +330,13 @@ class SsAgent(Agent):
             self.metabolism_spice / m_total
         )
 
-    def calculate_MRS(self):
+    def calculate_MRS(self, sugar=None, spice=None):
+        # Calculate the MRS given sugar and spice amount.
+        if sugar is None:
+            # If not specified, then use the whole sugar in possession.
+            sugar = self.sugar
+        if spice is None:
+            # If not specified, then use the whole spice in possession.
+            spice = self.spice
         # See GAS page 102 equation 3.
-        return (self.spice / self.metabolism_spice) / (
-            self.sugar / self.metabolism_sugar
-        )
+        return (spice / self.metabolism_spice) / (sugar / self.metabolism_sugar)
