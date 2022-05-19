@@ -1,6 +1,6 @@
 import math
 
-from mesa import Agent
+import mesa
 
 # Note: GAS refers to the book by Epstein, "Growing Artificial Societies:
 # Social Science from the Bottom Up," published in 1996.
@@ -21,7 +21,7 @@ def get_distance(pos_1, pos_2):
     return math.sqrt(dx**2 + dy**2)
 
 
-class Sugar(Agent):
+class Sugar(mesa.Agent):
     """
     Sugar is a FSM that
     - contains an amount of sugar
@@ -37,7 +37,7 @@ class Sugar(Agent):
         self.amount = min([self.max_sugar, self.amount + 1])
 
 
-class Spice(Agent):
+class Spice(mesa.Agent):
     """
     Spice is a FSM that
     - contains an amount of spice
@@ -53,7 +53,7 @@ class Spice(Agent):
         self.amount = min([self.max_spice, self.amount + 1])
 
 
-class SsAgent(Agent):
+class SsAgent(mesa.Agent):
     def __init__(
         self,
         pos,

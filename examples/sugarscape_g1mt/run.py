@@ -1,4 +1,4 @@
-from sugarscape_g1mt.model import SugarscapeG1MT
+from sugarscape_g1mt.model import SugarscapeG1mt
 
-model = SugarscapeG1MT(seed=42)
+model = SugarscapeG1mt(seed=42)
 model.run_model()

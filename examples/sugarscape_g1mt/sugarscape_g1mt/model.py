@@ -6,10 +6,7 @@ Sugarscape {G1}, {M, T} Model
 
 import numpy as np
 
-from mesa import Model
-from mesa.space import MultiGrid
-from mesa.datacollection import DataCollector
-from mesa.time import RandomActivationByType
+import mesa
 
 from .agents import SsAgent, Sugar, Spice
 
@@ -28,7 +25,7 @@ def geometric_mean(x):
     return np.exp(np.log(x).mean())
 
 
-class SugarscapeG1MT(Model):
+class SugarscapeG1mt(mesa.Model):
     """
     Sugarscape ({G1}, {M, T})
     """
@@ -48,9 +45,9 @@ class SugarscapeG1MT(Model):
         self.height = height
         self.initial_population = initial_population
 
-        self.schedule = RandomActivationByType(self)
-        self.grid = MultiGrid(self.width, self.height, torus=False)
-        self.datacollector = DataCollector(
+        self.schedule = mesa.time.RandomActivationByType(self)
+        self.grid = mesa.space.MultiGrid(self.width, self.height, torus=False)
+        self.datacollector = mesa.DataCollector(
             {
                 "SsAgent": lambda m: m.schedule.get_type_count(SsAgent),
                 "Trade volume": lambda m: sum(
@@ -146,7 +143,7 @@ class SugarscapeG1MT(Model):
                 self.schedule.get_type_count(SsAgent),
             )
 
-            import matplotlib.pyplot as plt
-            #plt.plot(self.datacollector.model_vars["Price"])
-            plt.plot(self.datacollector.model_vars["Trade volume"])
-            plt.savefig("AAAA.png")
+            # For plotting purpose TODO remove this.
+            # import matplotlib.pyplot as plt
+            # plt.plot(self.datacollector.model_vars["Price"])
+            # plt.plot(self.datacollector.model_vars["Trade volume"])
