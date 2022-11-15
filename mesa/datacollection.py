@@ -33,10 +33,10 @@ The default DataCollector here makes several assumptions:
     * The model has a schedule object called 'schedule'
     * The schedule has an agent list called agents
     * For collecting agent-level variables, agents must have a unique_id
+
 """
 from functools import partial
 import itertools
-from operator import attrgetter
 import pandas as pd
 import types
 
@@ -49,9 +49,12 @@ class DataCollector:
     functions which actually collect them. When the collect(...) method is
     called, it collects these attributes and executes these functions one by
     one and stores the results.
+
     """
 
-    def __init__(self, model_reporters=None, agent_reporters=None, tables=None):
+    def __init__(
+        self, model_reporters=None, agent_reporters=None, tables=None, schedule=None
+    ):
         """Instantiate a DataCollector with lists of model and agent reporters.
         Both model_reporters and agent_reporters accept a dictionary mapping a
         variable name to either an attribute name, or a method.
@@ -74,6 +77,7 @@ class DataCollector:
             model_reporters: Dictionary of reporter names and attributes/funcs
             agent_reporters: Dictionary of reporter names and attributes/funcs.
             tables: Dictionary of table names to lists of column names.
+            schedule: A scheduler from the mesa.time module. If not supplied, this defaults to `model.schedule`.
 
         Notes:
             If you want to pickle your model you must not use lambda functions.
@@ -89,6 +93,7 @@ class DataCollector:
             {"model_attribute": "model_attribute"}
             functions with parameters that have placed in a list
             {"Model_Function":[function, [param_1, param_2]]}
+
         """
         self.model_reporters = {}
         self.agent_reporters = {}
@@ -96,6 +101,8 @@ class DataCollector:
         self.model_vars = {}
         self._agent_records = {}
         self.tables = {}
+
+        self.schedule = schedule
 
         if model_reporters is not None:
             for name, reporter in model_reporters.items():
@@ -129,6 +136,7 @@ class DataCollector:
             name: Name of the agent-level variable to collect.
             reporter: Attribute string, or function object that returns the
                       variable when given a model instance.
+
         """
         if type(reporter) is str:
             attribute_name = reporter
@@ -142,25 +150,21 @@ class DataCollector:
         Args:
             table_name: Name of the new table.
             table_columns: List of columns to add to the table.
+
         """
         new_table = {column: [] for column in table_columns}
         self.tables[table_name] = new_table
 
-    def _record_agents(self, model):
+    def _record_agents(self, schedule):
         """Record agents data in a mapping of functions and agents."""
         rep_funcs = self.agent_reporters.values()
-        if all(hasattr(rep, "attribute_name") for rep in rep_funcs):
-            prefix = ["model.schedule.steps", "unique_id"]
-            attributes = [func.attribute_name for func in rep_funcs]
-            get_reports = attrgetter(*prefix + attributes)
-        else:
 
-            def get_reports(agent):
-                _prefix = (agent.model.schedule.steps, agent.unique_id)
-                reports = tuple(rep(agent) for rep in rep_funcs)
-                return _prefix + reports
+        def get_reports(agent):
+            _prefix = (schedule.steps, agent.unique_id)
+            reports = tuple(rep(agent) for rep in rep_funcs)
+            return _prefix + reports
 
-        agent_records = map(get_reports, model.schedule.agents)
+        agent_records = map(get_reports, schedule.agents)
         return agent_records
 
     def _reporter_decorator(self, reporter):
@@ -168,6 +172,11 @@ class DataCollector:
 
     def collect(self, model):
         """Collect all the data for the given model object."""
+        if self.schedule is None:
+            schedule = model.schedule
+        else:
+            schedule = self.schedule
+
         if self.model_reporters:
 
             for var, reporter in self.model_reporters.items():
@@ -184,8 +193,8 @@ class DataCollector:
                     self.model_vars[var].append(self._reporter_decorator(reporter))
 
         if self.agent_reporters:
-            agent_records = self._record_agents(model)
-            self._agent_records[model.schedule.steps] = list(agent_records)
+            agent_records = self._record_agents(schedule)
+            self._agent_records[schedule.steps] = list(agent_records)
 
     def add_table_row(self, table_name, row, ignore_missing=False):
         """Add a row dictionary to a specific table.
@@ -195,6 +204,7 @@ class DataCollector:
             row: A dictionary of the form {column_name: value...}
             ignore_missing: If True, fill any missing columns with Nones;
                             if False, throw an error if any columns are missing
+
         """
         if table_name not in self.tables:
             raise Exception("Table does not exist.")
@@ -217,6 +227,7 @@ class DataCollector:
 
         The DataFrame has one column for each model variable, and the index is
         (implicitly) the model tick.
+
         """
         return pd.DataFrame(self.model_vars)
 
@@ -225,6 +236,7 @@ class DataCollector:
 
         The DataFrame has one column for each variable, with two additional
         columns for tick and agent_id.
+
         """
         all_records = itertools.chain.from_iterable(self._agent_records.values())
         rep_names = list(self.agent_reporters)
@@ -241,6 +253,7 @@ class DataCollector:
 
         Args:
             table_name: The name of the table to convert.
+
         """
         if table_name not in self.tables:
             raise Exception("No such table.")

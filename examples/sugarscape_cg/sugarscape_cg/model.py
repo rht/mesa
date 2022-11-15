@@ -39,6 +39,12 @@ class SugarscapeCg(mesa.Model):
         self.datacollector = mesa.DataCollector(
             {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent)}
         )
+        self.datacollector2 = mesa.DataCollector(
+            agent_reporters={"number": lambda a: a.number}, schedule=self.schedule.agents_by_type[SsAgent]
+        )
+        self.datacollector3 = mesa.DataCollector(
+            agent_reporters={"number": lambda a: a.number}, schedule=self.schedule.agents_by_type[Sugar]
+        )
 
         # Create sugar
         import numpy as np
@@ -66,11 +72,15 @@ class SugarscapeCg(mesa.Model):
 
         self.running = True
         self.datacollector.collect(self)
+        self.datacollector2.collect(self)
+        self.datacollector3.collect(self)
 
     def step(self):
         self.schedule.step()
         # collect data
         self.datacollector.collect(self)
+        self.datacollector2.collect(self)
+        self.datacollector3.collect(self)
         if self.verbose:
             print([self.schedule.time, self.schedule.get_type_count(SsAgent)])
 
@@ -91,3 +101,5 @@ class SugarscapeCg(mesa.Model):
                 "Final number Sugarscape Agent: ",
                 self.schedule.get_type_count(SsAgent),
             )
+            print("datacollector2", self.datacollector2._agent_records)
+            print("datacollector3", self.datacollector3._agent_records)
