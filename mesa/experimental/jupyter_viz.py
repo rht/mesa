@@ -1,3 +1,5 @@
+import io
+import time
 import threading
 
 import matplotlib.pyplot as plt
@@ -6,12 +8,16 @@ import reacton.ipywidgets as widgets
 import solara
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
+from solara.alias import rw
 
 import mesa
 
 # Avoid interactive backend
 plt.switch_backend("agg")
 
+obj = None
+space_fig = None
+space_ax = None
 
 @solara.component
 def JupyterViz(
@@ -63,12 +69,15 @@ def JupyterViz(
     solara.Markdown(name)
     UserInputs(user_params, on_change=handle_change_model_params)
     ModelController(model, play_interval, current_step, set_current_step, reset_counter)
+    global obj
 
     with solara.GridFixed(columns=2):
         # 4. Space
         if space_drawer == "default":
             # draw with the default implementation
+
             make_space(model, agent_portrayal)
+            FigureMatplotlib(space_fig, dependencies=[model.schedule.steps])
         elif space_drawer:
             # if specified, draw agent space with an alternate renderer
             space_drawer(model, agent_portrayal)
@@ -235,6 +244,7 @@ def UserInputs(user_params, on_change=None):
 
 
 def make_space(model, agent_portrayal):
+    global obj, space_fig, space_ax
     def portray(g):
         x = []
         y = []
@@ -263,14 +273,28 @@ def make_space(model, agent_portrayal):
             out["c"] = c
         return out
 
-    space_fig = Figure()
-    space_ax = space_fig.subplots()
     if isinstance(model.grid, mesa.space.NetworkGrid):
         _draw_network_grid(model, space_ax, agent_portrayal)
     else:
-        space_ax.scatter(**portray(model.grid))
-    space_ax.set_axis_off()
-    solara.FigureMatplotlib(space_fig)
+        if model.schedule.steps == 0:
+            tic = time.time()
+            space_fig = Figure()
+            space_ax = space_fig.subplots()
+            obj = space_ax.scatter(**portray(model.grid))
+            space_ax.set_axis_off()
+            print("scatter i", time.time() - tic)
+        else:
+            tic = time.time()
+            p = portray(model.grid)
+            xy = list(zip(p["x"], p["y"]))
+            obj.set_offsets(xy)
+            if "s" in p:
+                # Size
+                obj.set_sizes(p["s"])
+            #if "c" in p:
+            #    # Color
+            #    obj.set_array(p["c"])
+            print("scatter u", time.time() - tic)
 
 
 def _draw_network_grid(model, space_ax, agent_portrayal):
@@ -300,3 +324,26 @@ def make_text(renderer):
         solara.Markdown(renderer(model))
 
     return function
+
+
+@solara.component
+def FigureMatplotlib(
+    figure,
+    dependencies,
+    format="png",
+    **kwargs,
+):
+    def make_image():
+        tic = time.time()
+        f = io.BytesIO()
+        figure.savefig(f, format=format, dpi=100, **kwargs)
+        out = f.getvalue()
+        print("e make_image", time.time() - tic)
+        return out
+
+    value = solara.use_memo(make_image, dependencies)
+    # mime type name is different from format name of matplotlib
+    format_mime = format
+    if format_mime == "svg":
+        format_mime = "svg+xml"
+    return rw.Image(value=value, format=format_mime)
