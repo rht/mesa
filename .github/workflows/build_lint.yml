@@ -56,7 +56,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}
     - name: todo
       if: steps.cache.outputs.cache-hit != 'true'
-      run: pip install wheel && pip install click cookiecutter matplotlib mesa_viz_tornado~=0.1.0,>=0.1.3 networkx numpy pandas solara tqdm black ruff~=0.1.1 coverage pytest>=4.6 pytest-cov sphinx
+      run: pip install wheel && pip install click cookiecutter matplotlib mesa_viz_tornado~=0.1.0 networkx numpy pandas solara tqdm black ruff~=0.1.1 coverage pytest>=4.6 pytest-cov sphinx
     - name: Install dependencies
       run: pip install install --no-deps .[dev]
     - name: Test with pytest
