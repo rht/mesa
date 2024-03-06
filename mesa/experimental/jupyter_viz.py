@@ -212,16 +212,16 @@ def ModelController(model, play_interval, current_step, reset_counter):
             do_step()
 
     def threaded_do_play():
-        if thread is not None and thread.is_alive():
+        if thread.value is not None and thread.value.is_alive():
             return
         thread.value = threading.Thread(target=do_play)
-        thread.start()
+        thread.value.start()
 
     def do_pause():
-        if (thread is None) or (not thread.is_alive()):
+        if (thread.value is None) or (not thread.value.is_alive()):
             return
         model.running = False
-        thread.join()
+        thread.value.join()
 
     def do_reset():
         reset_counter.value += 1
@@ -260,8 +260,8 @@ def ModelController(model, play_interval, current_step, reset_counter):
         # ipywidgets.Play until it is fixed. The threading
         # version is definite a much better implementation,
         # if it works.
-        # solara.Button(label="▶", color="primary", on_click=viz.threaded_do_play)
-        # solara.Button(label="⏸︎", color="primary", on_click=viz.do_pause)
+        solara.Button(label="▶", color="primary", on_click=threaded_do_play)
+        solara.Button(label="⏸︎", color="primary", on_click=do_pause)
         # solara.Button(label="Reset", color="primary", on_click=do_reset)
 
 
